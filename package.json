@@ -1,0 +1,29 @@
+{
+  "name": "instapapas",
+  "version": "1.0.0",
+  "description": "Instapapas is a social network similar to Instagram, but better",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ANyanCatFan/instapapas.git"
+  },
+  "author": "Matías con tilde",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ANyanCatFan/instapapas/issues"
+  },
+  "homepage": "https://github.com/ANyanCatFan/instapapas#readme",
+  "keywords": [
+    "Instapapas",
+    "social network"
+  ],
+  "dependencies": {
+    "express": "^4.15.2",
+    "firebase": "^3.7.1",
+    "sendgrid": "^4.8.0",
+    "socket.io": "^1.7.3"
+  }
+}
