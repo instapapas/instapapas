@@ -1,1 +1,1 @@
-web: node index.js
+web: source ./sendgrid.env && node index.js
