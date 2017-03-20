@@ -55,12 +55,12 @@ io.sockets.on("connection", function(socket) {
 
     var feedback = "Something unexpected happened";
     if (empty) feedback = "Your name is empty";
-    if (alreadyRegistered) feedback = "This email was already registered";
+    if (alreadyRegistered) feedback = "This username was already registered";
     if (!isEmail) feedback = "This email address is not valid";
     if (!passwordsMatch) feedback = "Passwords don't match";
 
-    if (!(alreadyRegistered || empty || !isEmail)) {
-      feedback = "Your email \"" + address + "\" was registered!\nCheck your email for confirmation.";
+    if (!(alreadyRegistered || empty || !isEmail || !passwordsMatch)) {
+      feedback = "Your account \"" + inData.username + "\" was registered!\nCheck your email for confirmation.";
       const confirmationSecret = Math.random().toString(36).substring(2);
       require("password-hash-and-salt")(inData.password).hash(function(error, hash) {
         users.push({
@@ -85,17 +85,22 @@ io.sockets.on("connection", function(socket) {
     users.on("value", function(dbData) {
       for (var i in dbData.val()) {
         const user = dbData.val()[i];
-        require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, function(error, verified) {
-          if (user.secret == inData.secret && verified) {
-            users.child(i).update({
-              secret: null,
-              time: new Date().getTime()
-            });
-            socket.emit("feedback", {
-              fb: "Your account \"" + user.username + "\" has been confirmed"
-            });
-          }
-        });
+        var feedback = "Something unexpected happened";
+        if (user.secret == inData.secret) {
+          require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, function(error, verified) {
+            if (verified) {
+              users.child(i).update({
+                secret: null,
+                time: new Date().getTime()
+              });
+              feedback = "Your account \"" + user.username + "\" has been confirmed";
+            } else
+              feedback = "Incorrect password";
+          });
+          socket.emit("feedback", {
+            fb: feedback
+          });
+        }
       }
     });
   });
@@ -107,9 +112,8 @@ setInterval(function() {
     for (var i in dbData.val()) {
       const object = dbData.val()[i]
       const now = new Date().getTime();
-      if (now - object.time > day && object.secret) {
+      if (now - object.time > day && object.secret)
         users.child(i).remove();
-      }
     }
   });
 }, day / 2);
