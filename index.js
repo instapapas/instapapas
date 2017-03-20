@@ -94,7 +94,6 @@ io.sockets.on("connection", function(socket) {
             socket.emit("feedback", {
               fb: "Your account \"" + user.username + "\" has been confirmed"
             });
-            break;
           }
         });
       }
