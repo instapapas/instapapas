@@ -82,36 +82,31 @@ io.sockets.on("connection", function(socket) {
   });
 
   socket.on("confirm", function(inData) {
-    users.on("value", function(data) {
-      for (var i in data.val()) {
-        if (data.val()[i].secret == inData.secret) {
-          users.child(i).update({
-            secret: null,
-            time: new Date().getTime()
-          });
-          socket.emit("feedback", {
-            fb: "Your account \"" + data.val()[i].username + "\" has been confirmed"
-          });
-          break;
-        }
+    users.on("value", function(dbData) {
+      for (var i in dbData.val()) {
+        const user = dbData.val()[i];
+        require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, function(error, verified) {
+          if (user.secret == inData.secret && verified) {
+            users.child(i).update({
+              secret: null,
+              time: new Date().getTime()
+            });
+            socket.emit("feedback", {
+              fb: "Your account \"" + user.username + "\" has been confirmed"
+            });
+            break;
+          }
+        });
       }
     });
   });
 });
 
-function checkHash(password, hash) {
-  require("password-hash-and-salt")(password).verifyAgainst(hash, function(error, verified) {
-    if (error)
-      throw new Error("Something went wrong!");
-    return verified;
-  });
-}
-
 const day = 1000 * 60 * 60;
 setInterval(function() {
-  users.on("value", function(data) {
-    for (var i in data.val()) {
-      const object = data.val()[i]
+  users.on("value", function(dbData) {
+    for (var i in dbData.val()) {
+      const object = dbData.val()[i]
       const now = new Date().getTime();
       if (now - object.time > day && object.secret) {
         users.child(i).remove();
@@ -132,9 +127,7 @@ function sendEmail(address, subject, content, from) {
     method: "POST",
     path: "/v3/mail/send",
     body: mail.toJSON()
-  }), function(error, response) {
-    if (error) console.log(error);
-  });
+  }));
 }
 
 function template(content) {
