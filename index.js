@@ -1,6 +1,12 @@
 const io = require("socket.io")(require("express")().listen(process.env.PORT || 3000));
 const firebase = require("firebase");
-firebase.initializeApp(require("./config"));
+firebase.initializeApp({
+  apiKey: process.env.API_KEY,
+  authDomain: process.env.AUTH_DOMAIN,
+  databaseURL: process.env.DATABASE_URL,
+  storageBucket: process.env.STORAGE_BUCKET,
+  messagingSenderId: process.env.MESSAGING_SENDER_ID
+});
 const pictures = firebase.database().ref("images");
 const users = firebase.database().ref("users");
 
@@ -82,10 +88,10 @@ io.sockets.on("connection", function(socket) {
   });
 
   socket.on("confirm", function(inData) {
+    var feedback = "Something unexpected happened";
     users.on("value", function(dbData) {
       for (var i in dbData.val()) {
         const user = dbData.val()[i];
-        var feedback = "Something unexpected happened";
         if (user.secret == inData.secret) {
           require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, function(error, verified) {
             if (verified) {
@@ -97,11 +103,11 @@ io.sockets.on("connection", function(socket) {
             } else
               feedback = "Incorrect password";
           });
-          socket.emit("feedback", {
-            fb: feedback
-          });
         }
       }
+    });
+    socket.emit("feedback", {
+      fb: feedback
     });
   });
 });
