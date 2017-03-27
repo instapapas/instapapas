@@ -13,18 +13,12 @@ const users = firebase.database().ref("users");
 io.sockets.on("connection", function(socket) {
   socket.on("push", function(inData) {
     pictures.push({
-      name: inData.name,
+      name: inData.name.replace(" ", "%20"),
       image: inData.image,
       time: new Date().getTime()
     });
-    pictures.on("value", function(dbData) {
-      for (var i in dbData.val()) {
-        if (dbData.val()[i].username == inData.username) {
-          socket.emit("feedback", {
-            image: dbData.val()[i].image
-          });
-        }
-      }
+    socket.emit("feedback", {
+      name: inData.name
     });
   });
 
@@ -32,7 +26,7 @@ io.sockets.on("connection", function(socket) {
     pictures.on("value", function(dbData) {
       var outData = [];
       for (var i in dbData.val())
-        if (dbData.val()[i].name == inData.name)
+        if (inData.name == dbData.val()[i].name || inData.name == "*")
           outData.push(dbData.val()[i].image);
       if (outData) {
         socket.emit("feedback", {
@@ -102,27 +96,27 @@ io.sockets.on("connection", function(socket) {
               feedback = "Your account \"" + user.username + "\" has been confirmed";
             } else
               feedback = "Incorrect password";
+            socket.emit("feedback", {
+              fb: feedback
+            });
           });
         }
       }
     });
-    socket.emit("feedback", {
-      fb: feedback
-    });
   });
 });
 
-const day = 1000 * 60 * 60;
+const hour = 1000 * 60 * 60;
 setInterval(function() {
   users.on("value", function(dbData) {
     for (var i in dbData.val()) {
       const object = dbData.val()[i]
       const now = new Date().getTime();
-      if (now - object.time > day && object.secret)
+      if (now - object.time > hour && object.secret)
         users.child(i).remove();
     }
   });
-}, day / 2);
+}, hour / 2);
 
 function sendEmail(address, subject, content, from) {
   const helper = require("sendgrid").mail;
