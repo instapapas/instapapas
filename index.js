@@ -10,8 +10,8 @@ firebase.initializeApp({
 const pictures = firebase.database().ref("images");
 const users = firebase.database().ref("users");
 
-io.sockets.on("connection", function(socket) {
-  socket.on("push", function(inData) {
+io.sockets.on("connection", socket => {
+  socket.on("push", inData => {
     pictures.push({
       name: inData.name.replace(" ", "%20"),
       image: inData.image,
@@ -22,8 +22,8 @@ io.sockets.on("connection", function(socket) {
     });
   });
 
-  socket.on("search", function(inData) {
-    pictures.on("value", function(dbData) {
+  socket.on("search", inData => {
+    pictures.on("value", dbData => {
       var outData = [];
       for (var i in dbData.val())
         if (inData.name == dbData.val()[i].name || inData.name == "*")
@@ -36,11 +36,11 @@ io.sockets.on("connection", function(socket) {
     });
   });
 
-  socket.on("createUser", function(inData) {
+  socket.on("createUser", inData => {
     const address = inData.email;
     const empty = inData.name.length == 0;
     var alreadyRegistered = false;
-    users.on("value", function(dbData) {
+    users.on("value", dbData => {
       for (var i in dbData.val()) {
         if (dbData.val()[i].username == inData.username) {
           alreadyRegistered = true;
@@ -62,7 +62,7 @@ io.sockets.on("connection", function(socket) {
     if (!(alreadyRegistered || empty || !isEmail || !passwordsMatch)) {
       feedback = "Your account \"" + inData.username + "\" was registered!\nCheck your email for confirmation.";
       const confirmationSecret = Math.random().toString(36).substring(2);
-      require("password-hash-and-salt")(inData.password).hash(function(error, hash) {
+      require("password-hash-and-salt")(inData.password).hash((error, hash) => {
         users.push({
           username: inData.username,
           name: inData.name,
@@ -81,13 +81,13 @@ io.sockets.on("connection", function(socket) {
     });
   });
 
-  socket.on("confirm", function(inData) {
+  socket.on("confirm", inData => {
     var feedback = "Something unexpected happened";
-    users.on("value", function(dbData) {
+    users.on("value", dbData => {
       for (var i in dbData.val()) {
         const user = dbData.val()[i];
         if (user.secret == inData.secret) {
-          require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, function(error, verified) {
+          require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, (error, verified) => {
             if (verified) {
               users.child(i).update({
                 secret: null,
@@ -107,8 +107,8 @@ io.sockets.on("connection", function(socket) {
 });
 
 const hour = 1000 * 60 * 60;
-setInterval(function() {
-  users.on("value", function(dbData) {
+setInterval(() => {
+  users.on("value", dbData => {
     for (var i in dbData.val()) {
       const object = dbData.val()[i]
       const now = new Date().getTime();
@@ -118,7 +118,7 @@ setInterval(function() {
   });
 }, hour / 2);
 
-function sendEmail(address, subject, content, from) {
+let sendEmail = (address, subject, content, from) => {
   const helper = require("sendgrid").mail;
   const fromEmail = new helper.Email(from);
   const toEmail = new helper.Email(address);
@@ -133,7 +133,7 @@ function sendEmail(address, subject, content, from) {
   }));
 }
 
-function template(content) {
+let template = (content) => {
   return `<body style="@import url('https://fonts.googleapis.com/css?family=Roboto+Mono:300'); text-align: center; font-family: 'Roboto Mono', monospace; color: black;">
     <h1 style="font-size: 2rem; font-weight: 100;">instapapas</h1>
     <p>` + content + `</p>
