@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"\u00AF\\_(\u30C4)_\/\u00AF\""
+    "test": "echo \"¯\\_(ツ)_/¯\""
   },
   "repository": {
     "type": "git",
@@ -23,9 +23,9 @@
   ],
   "dependencies": {
     "express": "^4.15.2",
-    "firebase": "^3.7.1",
+    "firebase": "^3.7.5",
     "password-hash-and-salt": "^0.1.4",
-    "sendgrid": "^4.8.0",
+    "sendgrid": "^4.10.0",
     "socket.io": "^1.7.3"
   }
 }
