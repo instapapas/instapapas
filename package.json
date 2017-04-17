@@ -5,22 +5,22 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"¯\\_(ツ)_/¯\""
+    "test": "echo \"\u00AF\\_(\u30C4)_\/\u00AF\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ANyanCatFan/instapapas.git"
+    "url": "git+https://github.com/instapapas/instapapas.git"
   },
+  "keywords": [
+    "instagram",
+    "social network"
+  ],
   "author": "Matías con tilde",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ANyanCatFan/instapapas/issues"
+    "url": "https://github.com/instapapas/instapapas/issues"
   },
-  "homepage": "https://github.com/ANyanCatFan/instapapas#readme",
-  "keywords": [
-    "instapapas",
-    "social network"
-  ],
+  "homepage": "https://github.com/instapapas/instapapas#readme",
   "dependencies": {
     "express": "^4.15.2",
     "firebase": "^3.7.5",

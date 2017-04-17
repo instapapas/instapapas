@@ -17,8 +17,8 @@ const users = firebase.database().ref("users");
 
 // When a client connects
 io.sockets.on("connection", socket => {
-  // When the client sends a "push" message
-  socket.on("push", inData => {
+  // When the client sends a "upload" message
+  socket.on("upload", (inData, fb) => {
     // Add it to firebase
     pictures.push({
       name: inData.name.replace(" ", "%20"),
@@ -26,41 +26,37 @@ io.sockets.on("connection", socket => {
       time: new Date().getTime()
     });
     // Send back feedback
-    socket.emit("feedback", {
-      name: inData.name
-    });
+    fb(inData.name);
   });
 
   // When the client sends a "search" message
-  socket.on("search", inData => {
+  socket.on("search", (name, fb) => {
     // Recieve all pictures
     pictures.on("value", dbData => {
       var outData = [];
       for (var i in dbData.val()) {
         // If the image name matches the search, push it to the array
-        if (inData.name == dbData.val()[i].name || inData.name == "*") {
+        if (name === dbData.val()[i].name || name === "*") {
           outData.push(dbData.val()[i].image);
         }
       }
       // Send back the image array
-      socket.emit("feedback", {
-        images: outData
-      });
+      fb(outData);
     });
   });
 
-  // When the client sends a "createUser" message
-  socket.on("createUser", inData => {
+  // When the client sends a "register" message
+  socket.on("register", (inData, fb) => {
     const address = inData.email;
 
-    // Check if email address is empty
-    const empty = inData.name.length == 0;
+    // Check if name is empty
+    const empty = inData.name.length === 0;
 
     // Check if username is already in the database
     var alreadyRegistered = false;
     users.on("value", dbData => {
       for (var i in dbData.val()) {
-        if (dbData.val()[i].username == inData.username) {
+        if (dbData.val()[i].username === inData.username) {
           alreadyRegistered = true;
           break;
         }
@@ -70,17 +66,17 @@ io.sockets.on("connection", socket => {
     // Check if the email address is valid
     const indexAt = address.indexOf("@");
     const indexDot = address.lastIndexOf(".");
-    const isEmail = 1 < indexAt && indexAt + 2 < indexDot && indexDot < address.length - 2 && !address.includes(" ") && address.replace(/[^@]/g, "").length == 1;
-    const passwordsMatch = inData.password == inData.confirmPassword;
+    const isEmail = 1 < indexAt && indexAt + 2 < indexDot && indexDot < address.length - 2 && !address.includes(" ") && address.replace(/[^@]/g, "").length === 1;
+    const passwordsMatch = inData.password === inData.confirmPassword;
 
-    // Detrmine the feedback message
+    // Determine the feedback message
     var feedback = "Something unexpected happened";
     if (empty) feedback = "Your name is empty";
     if (alreadyRegistered) feedback = "This username was already registered";
     if (!isEmail) feedback = "This email address is not valid";
     if (!passwordsMatch) feedback = "Passwords don't match";
 
-    // If everything passed
+    // If everything is correct
     if (!(alreadyRegistered || empty || !isEmail || !passwordsMatch)) {
       feedback = "Your account \"" + inData.username + "\" was registered!\nCheck your email for confirmation.";
 
@@ -102,18 +98,16 @@ io.sockets.on("connection", socket => {
 
       // Define the email to send and send it
       const subject = "Hello " + inData.username + ", confirm your email address";
-      const content = "Your email address \"" + address + "\" has been requested under the username of \"" + inData.username + "\" in the instapapas users database.\n\nIf you want to register it, click on <a href=\"https://instapapas.github.io/confirm?" + confirmationSecret + "\">this link</a> within the next hour or so, otherwise the request will be deleted";
+      const content = "Your email address \"" + address + "\" has been requested under the username of \"" + inData.username + "\" in the instapapas users database.\n\nIf you want to register it, click on <a href=\"https://instapapas.github.io/confirm?" + confirmationSecret + "\">this link</a> within the next twelve hours, otherwise the request will be deleted";
       sendEmail(address, subject, content, "instapapas@matiascontilde.me");
     }
 
     // Send feedback to the client
-    socket.emit("feedback", {
-      fb: feedback
-    });
+    fb(feedback);
   });
 
   // To confirm an account
-  socket.on("confirm", inData => {
+  socket.on("confirm", (inData, fb) => {
     // Define the feedback firstly as if everything would have gone wrong
     var feedback = "Something unexpected happened";
 
@@ -123,7 +117,7 @@ io.sockets.on("connection", socket => {
       for (var i in dbData.val()) {
         const user = dbData.val()[i];
         //If that user has the matching secret
-        if (user.secret == inData.secret) {
+        if (user.secret === inData.secret) {
           // Check if password is correct
           require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, (error, verified) => {
             if (verified) {
@@ -136,9 +130,7 @@ io.sockets.on("connection", socket => {
             } else {
               feedback = "Incorrect password";
             }
-            socket.emit("feedback", {
-              fb: feedback
-            });
+            fb(feedback);
           });
         }
       }
@@ -146,8 +138,8 @@ io.sockets.on("connection", socket => {
   });
 });
 
-// Every hour, delete unconfirmed emails
-const hour = 1000 * 60 * 60;
+// Every 12 hours, delete unconfirmed emails
+const hour = 1000 * 60 * 60 * 12;
 setInterval(() => {
   users.on("value", dbData => {
     for (var i in dbData.val()) {
@@ -177,12 +169,12 @@ let sendEmail = (address, subject, content, from) => {
     path: "/v3/mail/send",
     body: mail.toJSON()
   }));
-}
+};
 
 // Takes a message and returns a stylized version of it
 let template = (content) => {
   return `<body style="@import url('https://fonts.googleapis.com/css?family=Roboto+Mono:300'); text-align: center; font-family: 'Roboto Mono', monospace; color: black;">
     <h1 style="font-size: 2rem; font-weight: 100;">instapapas</h1>
     <p>` + content + `</p>
-  </body>`
-}
+  </body>`;
+};
