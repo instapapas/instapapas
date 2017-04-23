@@ -21,7 +21,7 @@ io.sockets.on("connection", socket => {
   socket.on("upload", (inData, fb) => {
     // Add it to firebase
     pictures.push({
-      name: inData.name.replace(" ", "%20"),
+      name: inData.name,
       image: inData.image,
       time: new Date().getTime()
     });
@@ -37,7 +37,7 @@ io.sockets.on("connection", socket => {
       for (var i in dbData.val()) {
         // If the image name matches the search, push it to the array
         if (name === dbData.val()[i].name || name === "*") {
-          outData.push(dbData.val()[i].image);
+          outData.push(dbData.val()[i]);
         }
       }
       // Send back the image array
