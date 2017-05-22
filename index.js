@@ -1,30 +1,46 @@
 // Create socket server in Heroku or at port 3000 if localhost
 const io = require("socket.io")(require("express")().listen(process.env.PORT || 3000));
+const fs = require("fs");
+
+const PROJECT_ID = "instapapas"
 // Create firebase
 const firebase = require("firebase");
 // Initialize firebase instance with Heroku config vars
 firebase.initializeApp({
-  apiKey: process.env.API_KEY,
-  authDomain: process.env.AUTH_DOMAIN,
-  databaseURL: process.env.DATABASE_URL,
-  storageBucket: process.env.STORAGE_BUCKET,
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: PROJECT_ID + ".firebaseapp.com",
+  databaseURL: "https://" + PROJECT_ID + ".firebaseio.com",
+  storageBucket: "https://" + PROJECT_ID + ".appspot.com",
   messagingSenderId: process.env.MESSAGING_SENDER_ID
 });
+
 // Create firebase images reference
 const pictures = firebase.database().ref("images");
 // Create firebase users reference
 const users = firebase.database().ref("users");
 
+fs.writeFileSync("key.json", process.env.STORAGE_API_KEY);
+const storage = require('@google-cloud/storage')({
+  projectId: PROJECT_ID,
+  keyFilename: "key.json"
+});
+fs.unlinkSync("key.json");
+
+const bucket = storage.bucket(PROJECT_ID + ".appspot.com");
+
 // When a client connects
 io.sockets.on("connection", socket => {
   // When the client sends a "upload" message
   socket.on("upload", (inData, fb) => {
-    // Add it to firebase
-    pictures.push({
-      name: inData.name,
-      image: inData.image,
-      time: new Date().getTime()
+    uploadFile(inData.file, (url) => {
+      // Add it to firebase
+      pictures.push({
+        name: inData.name,
+        url,
+        time: new Date().getTime()
+      });
     });
+
     // Send back feedback
     fb(inData.name);
   });
@@ -116,7 +132,7 @@ io.sockets.on("connection", socket => {
       // Loop through all users
       for (var i in dbData.val()) {
         const user = dbData.val()[i];
-        //If that user has the matching secret
+        // If that user has the matching secret
         if (user.secret === inData.secret) {
           // Check if password is correct
           require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, (error, verified) => {
@@ -151,8 +167,19 @@ setInterval(() => {
   });
 }, hour / 2);
 
+const uploadFile = (input, cb) => {
+  const extension = input.type;
+  const fileName = Math.random().toString(36).substring(2) + "." + extension.substr(extension.lastIndexOf("/") + 1);
+  fs.writeFileSync(fileName, input.file, "base64");
+  bucket.upload(fileName, (err, file) => {
+    console.log(fileName);
+    cb("https://firebasestorage.googleapis.com/v0/b/" + PROJECT_ID + ".appspot.com/o/" + fileName + "?alt=media");
+    fs.unlinkSync(fileName);
+  });
+}
+
 // Send an email with SendGrid
-let sendEmail = (address, subject, content, from) => {
+const sendEmail = (address, subject, content, from) => {
   // Define the needed parameters
   const helper = require("sendgrid").mail;
   const fromEmail = new helper.Email(from);
@@ -172,7 +199,7 @@ let sendEmail = (address, subject, content, from) => {
 };
 
 // Takes a message and returns a stylized version of it
-let template = (content) => {
+const template = (content) => {
   return `<body style="@import url('https://fonts.googleapis.com/css?family=Roboto+Mono:300'); text-align: center; font-family: 'Roboto Mono', monospace; color: black;">
     <h1 style="font-size: 2rem; font-weight: 100;">instapapas</h1>
     <p>` + content + `</p>
