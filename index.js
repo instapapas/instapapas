@@ -99,7 +99,9 @@ io.sockets.on("connection", socket => {
       const confirmationSecret = Math.random().toString(36).substring(2);
 
       // Hash the password
-      require("password-hash-and-salt")(inData.password).hash((error, hash) => {
+      require("password-hash-and-salt")(inData.password).hash((err, hash) => {
+        if (err) console.log(err);
+
         // Add user to the database
         users.push({
           username: inData.username,
@@ -134,7 +136,9 @@ io.sockets.on("connection", socket => {
         // If that user has the matching secret
         if (user.secret === inData.secret) {
           // Check if password is correct
-          require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, (error, verified) => {
+          require("password-hash-and-salt")(inData.password).verifyAgainst(user.password, (err, verified) => {
+            if (err) console.log(err);
+
             if (verified) {
               // Delete the secret from the user and update the time
               users.child(i).update({
@@ -170,6 +174,8 @@ const uploadFile = (input, cb) => {
   const fileName = Math.random().toString(36).substring(2) + "." + input.extension;
   fs.writeFileSync(fileName, input.file, "base64");
   bucket.upload(fileName, (err, file) => {
+    if (err) console.log(err);
+
     cb("https://firebasestorage.googleapis.com/v0/b/" + PROJECT_ID + ".appspot.com/o/" + fileName + "?alt=media");
     fs.unlinkSync(fileName);
   });
