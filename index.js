@@ -24,7 +24,6 @@ const storage = require('@google-cloud/storage')({
   projectId: PROJECT_ID,
   keyFilename: "key.json"
 });
-fs.unlinkSync("key.json");
 
 const bucket = storage.bucket(PROJECT_ID + ".appspot.com");
 
@@ -39,10 +38,10 @@ io.sockets.on("connection", socket => {
         url,
         time: new Date().getTime()
       });
-    });
 
-    // Send back feedback
-    fb(inData.name);
+      // Send back feedback
+      fb(inData.name);
+    });
   });
 
   // When the client sends a "search" message
@@ -168,11 +167,9 @@ setInterval(() => {
 }, hour / 2);
 
 const uploadFile = (input, cb) => {
-  const extension = input.type;
-  const fileName = Math.random().toString(36).substring(2) + "." + extension.substr(extension.lastIndexOf("/") + 1);
+  const fileName = Math.random().toString(36).substring(2) + "." + input.extension;
   fs.writeFileSync(fileName, input.file, "base64");
   bucket.upload(fileName, (err, file) => {
-    console.log(fileName);
     cb("https://firebasestorage.googleapis.com/v0/b/" + PROJECT_ID + ".appspot.com/o/" + fileName + "?alt=media");
     fs.unlinkSync(fileName);
   });
