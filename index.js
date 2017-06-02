@@ -157,18 +157,18 @@ io.sockets.on("connection", socket => {
   });
 });
 
-// Every 12 hours, delete unconfirmed emails
-const hour = 1000 * 60 * 60 * 12;
+// Every minute, delete unconfirmed accounts older than half a day
 setInterval(() => {
   users.on("value", dbData => {
+    console.log(dbData);
     for (var i in dbData.val()) {
       const user = dbData.val()[i];
-      if (new Date().getTime() - user.time > hour && user.secret) {
+      if (new Date().getTime() - user.time > 1000 * 60 * 60 * 12 && user.secret) {
         users.child(i).remove();
       }
     }
   });
-}, hour / 2);
+}, 60 * 1000);
 
 const uploadFile = (input, cb) => {
   const fileName = Math.random().toString(36).substring(2) + "." + input.extension;
