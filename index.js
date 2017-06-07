@@ -15,7 +15,7 @@ firebase.initializeApp({
 });
 
 // Create firebase images reference
-const pictures = firebase.database().ref("images");
+const images = firebase.database().ref("images");
 // Create firebase users reference
 const users = firebase.database().ref("users");
 
@@ -33,7 +33,7 @@ io.sockets.on("connection", socket => {
   socket.on("upload", (inData, fb) => {
     uploadFile(inData.file, (url) => {
       // Add it to firebase
-      pictures.push({
+      images.push({
         name: inData.name,
         url,
         time: new Date().getTime()
@@ -47,7 +47,7 @@ io.sockets.on("connection", socket => {
   // When the client sends a "search" message
   socket.on("search", (name, fb) => {
     // Recieve all pictures
-    pictures.on("value", dbData => {
+    images.on("value", dbData => {
       var outData = [];
       for (var i in dbData.val()) {
         // If the image name matches the search, push it to the array
@@ -155,6 +155,26 @@ io.sockets.on("connection", socket => {
       }
     });
   });
+
+  socket.on("statsImages", (inData, fb) => {
+    if (inData.length) {
+      images.on("value", dbData => {
+        fb({
+          length: Object.keys(dbData.val()).length
+        });
+      });
+    }
+  });
+
+  socket.on("statsUsers", (inData, fb) => {
+    if (inData.length) {
+      users.on("value", dbData => {
+        fb({
+          length: Object.keys(dbData.val()).length
+        });
+      });
+    }
+  })
 });
 
 // Every minute, delete unconfirmed accounts older than half a day
